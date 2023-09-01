@@ -88,11 +88,19 @@ async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.Slas
         channel = bot.get_channel(interaction.channel_id)
         msg = await channel.send(message)
         for emote in emotes:
-            msg.add_reaction()
+            emoji = nextcord.utils.get(msg.guild.emojis,name=emote)
+            await msg.add_reaction(emoji)
     except Exception as error:
         print(error)
         await interaction.send(f"Erreur: {error}")
         return
+
+
+@application_checks.has_permissions(administrator = True)
+@bot.slash_command(description="Arrête le bot")
+async def stop(interaction = nextcord.Interaction):
+    await interaction.send("Arrêt en cours...")
+    quit()
 
 
 bot.run(get_token())
