@@ -73,4 +73,26 @@ async def role(interaction: nextcord.Interaction, categorie: str = nextcord.Slas
         await interaction.send(f"I: Rôle {role.name} Ajouté")
 
 
+@bot.slash_command(description="Créer un message afin d'assigner des roles")
+async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.SlashOption(required=True), emotes:str = nextcord.SlashOption(required=True), roles:str = nextcord.SlashOption(required=True)):
+    try:
+        await interaction.send("Création...")
+        print(emotes, roles)
+        emotes = emotes.split(",")
+        roles = roles.replace("<","")
+        roles = roles.replace(">","")
+        roles = roles.replace("&","")
+        roles = roles.replace("@","")
+        roles = roles.replace(" ","")
+        roles = roles.split(",")
+        channel = bot.get_channel(interaction.channel_id)
+        msg = await channel.send(message)
+        for emote in emotes:
+            msg.add_reaction()
+    except Exception as error:
+        print(error)
+        await interaction.send(f"Erreur: {error}")
+        return
+
+
 bot.run(get_token())
