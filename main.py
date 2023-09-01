@@ -3,7 +3,7 @@ from nextcord.ext import commands, application_checks
 from json import dump,load
 import unidecode
 #from emoji import *
-from os import *
+from os import listdir, mkdir, getcwd, path
 
 
 
@@ -16,12 +16,12 @@ class Dataset:
 
     def add_data(self,id,content):
         self.data[id] = content
-        return
+        return self.data
     
 
     def remove_data(self,id):
         self.data.pop(id)
-        return
+        return self.data
     
 
     def load_data(self,file):
@@ -39,18 +39,19 @@ class Dataset:
 
 class data:
     def __init__(self):
-        self.datasets = []
+        self.datasets = {}
         return
     
 
     def add_dataset(self,dataset:Dataset):
-        self.datasets.append(dataset)
-        return
+        self.datasets[dataset.name] = dataset
+        print(f"Datasets {self.datasets}")
+        return self.datasets
     
 
     def delete_dataset(self,dataset:Dataset):
-        self.datasets.pop(dataset)
-        return
+        self.datasets.pop(dataset.name)
+        return self.datasets
 
 
 datas = data()
@@ -67,16 +68,51 @@ bot = commands.Bot()
 
 
 @bot.event
+async def on_raw_reaction_add(payload):
+    user = payload.member
+    if not user == bot.user:
+        message_id = payload.message_id
+        guild_id = payload.guild_id
+        guild_roles_messages = datas.datasets[str(guild_id)]
+        if str(message_id) in guild_roles_messages.data:
+            guild = await bot.fetch_guild(guild_id)
+            role_to_assign = guild.get_role(int(guild_roles_messages.data[str(message_id)][payload.emoji.name]))
+            try:
+                await user.add_roles(role_to_assign)
+            except Exception as e:
+                print(e)
+                pass
+
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    message_id = payload.message_id
+    guild_id = payload.guild_id
+    guild_roles_messages = datas.datasets[str(guild_id)]
+    if str(message_id) in guild_roles_messages.data:
+        guild = await bot.fetch_guild(guild_id)
+        user = await guild.fetch_member(payload.user_id)
+        role_to_unassign = guild.get_role(int(guild_roles_messages.data[str(message_id)][payload.emoji.name]))
+        try:
+            await user.remove_roles(role_to_unassign)
+        except Exception as e:
+            print(e)
+            pass
+
+@bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
     global datas
-    for file in listdir("data"):
-        if not file.format == "json":
-            pass
-        else:
-            _tmp = Dataset(file)
-            _tmp.load_data(file)
-            datas.add_dataset(_tmp)
+    try:
+        for file in listdir(path.join(getcwd(),"data")):
+            if file.endswith(".json"):
+                filename = file.replace(".json","")
+                print(f"got file {filename}.json")
+                _tmp = Dataset(filename)
+                _tmp.load_data(filename)
+                datas.add_dataset(_tmp)
+    except FileNotFoundError:
+        mkdir("data")
     return
 
 
@@ -118,6 +154,7 @@ async def role(interaction: nextcord.Interaction, categorie: str = nextcord.Slas
 @bot.slash_command(description="Créer un message afin d'assigner des roles")
 async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.SlashOption(required=True), emotes:str = nextcord.SlashOption(required=True), roles:str = nextcord.SlashOption(required=True)):
     try:
+        global datas
         await interaction.send("Création...")
         print(emotes, roles)
         emotes = emotes.split(",")
@@ -129,9 +166,22 @@ async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.Slas
         roles = roles.split(",")
         channel = bot.get_channel(interaction.channel_id)
         msg = await channel.send(message)
-        for emote in emotes:
+        assignTable = {}
+        for emote,role in zip(emotes,roles):
             print(emote)
             await msg.add_reaction(emote)
+            assignTable[emote] = role
+        print(assignTable)
+        print(msg.guild.id)
+        if msg.guild.id not in datas.datasets.keys():
+            _tmp = Dataset(str(msg.guild.id))
+            _tmp.add_data(msg.id,assignTable)
+            _tmp.save_data(msg.guild.id)
+            datas.add_dataset(_tmp)
+        else:
+            _tmp = datas.datasets[str(msg.guild.id)]
+            _tmp.add_data(msg.id,assignTable)
+            _tmp.save_data(msg.guild.id)
     except Exception as error:
         print(error)
         await interaction.send(f"Erreur: {error}")
