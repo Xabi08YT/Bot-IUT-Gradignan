@@ -2,10 +2,58 @@ import nextcord
 from nextcord.ext import commands, application_checks
 from json import dump,load
 import unidecode
+#from emoji import *
+from os import *
 
 
-data = ""
-role_messages = {}
+
+class Dataset:
+    def __init__(self, name):
+        self.data = {}
+        self.name = name
+        return
+    
+
+    def add_data(self,id,content):
+        self.data[id] = content
+        return
+    
+
+    def remove_data(self,id):
+        self.data.pop(id)
+        return
+    
+
+    def load_data(self,file):
+        with open(f'data/{file}.json', 'r') as f:
+            self.data = load(f)
+            f.close()
+        return
+    
+
+    def save_data(self,file):
+        with open(f'data/{file}.json', 'w') as f:
+            dump(self.data, f)
+            f.close()
+        return
+
+class data:
+    def __init__(self):
+        self.datasets = []
+        return
+    
+
+    def add_dataset(self,dataset:Dataset):
+        self.datasets.append(dataset)
+        return
+    
+
+    def delete_dataset(self,dataset:Dataset):
+        self.datasets.pop(dataset)
+        return
+
+
+datas = data()
 
 
 def get_token():
@@ -15,26 +63,20 @@ def get_token():
     return token.decode('utf-8')
 
 
-def save_to_data(payload, keyname:str):
-    with open("./data/data.json","w+")as file :
-        dump(data, file)
-        file.close()
-    return
-
-
 bot = commands.Bot()
 
 
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
-    global data
-    try:
-        with open("./data/data.json","r") as f:
-            data = load(f)
-            f.close()
-    except FileNotFoundError:
-        pass
+    global datas
+    for file in listdir("data"):
+        if not file.format == "json":
+            pass
+        else:
+            _tmp = Dataset(file)
+            _tmp.load_data(file)
+            datas.add_dataset(_tmp)
     return
 
 
@@ -88,8 +130,8 @@ async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.Slas
         channel = bot.get_channel(interaction.channel_id)
         msg = await channel.send(message)
         for emote in emotes:
-            emoji = nextcord.utils.get(msg.guild.emojis,name=emote)
-            await msg.add_reaction(emoji)
+            print(emote)
+            await msg.add_reaction(emote)
     except Exception as error:
         print(error)
         await interaction.send(f"Erreur: {error}")
