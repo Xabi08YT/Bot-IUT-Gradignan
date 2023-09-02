@@ -2,7 +2,6 @@ import nextcord
 from nextcord.ext import commands, application_checks
 from json import dump,load
 import unidecode
-#from emoji import *
 from os import listdir, mkdir, getcwd, path
 
 
@@ -155,6 +154,7 @@ async def role(interaction: nextcord.Interaction, categorie: str = nextcord.Slas
 async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.SlashOption(required=True), emotes:str = nextcord.SlashOption(required=True), roles:str = nextcord.SlashOption(required=True)):
     try:
         global datas
+        print(datas.datasets)
         await interaction.send("Création...")
         print(emotes, roles)
         emotes = emotes.split(",")
@@ -170,17 +170,20 @@ async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.Slas
         for emote,role in zip(emotes,roles):
             print(emote)
             await msg.add_reaction(emote)
-            assignTable[emote] = role
+            assignTable[emote] = str(role)
         print(assignTable)
         print(msg.guild.id)
-        if msg.guild.id not in datas.datasets.keys():
+        print(msg.id)
+        print()
+        if str(msg.guild.id) not in datas.datasets.keys():
+            print("coucou")
             _tmp = Dataset(str(msg.guild.id))
-            _tmp.add_data(msg.id,assignTable)
+            _tmp.add_data(str(msg.id),assignTable)
             _tmp.save_data(msg.guild.id)
             datas.add_dataset(_tmp)
         else:
             _tmp = datas.datasets[str(msg.guild.id)]
-            _tmp.add_data(msg.id,assignTable)
+            _tmp.add_data(str(msg.id),assignTable)
             _tmp.save_data(msg.guild.id)
     except Exception as error:
         print(error)
