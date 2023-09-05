@@ -150,6 +150,7 @@ async def role(interaction: nextcord.Interaction, categorie: str = nextcord.Slas
         await interaction.send(f"I: Rôle {role.name} Ajouté")
 
 
+@application_checks.has_permissions(administrator = True)
 @bot.slash_command(description="Créer un message afin d'assigner des roles")
 async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.SlashOption(required=True), emotes:str = nextcord.SlashOption(required=True), roles:str = nextcord.SlashOption(required=True)):
     try:
