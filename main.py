@@ -5,8 +5,6 @@ import unidecode
 from os import listdir, mkdir, getcwd, path
 
 
-intents = nextcord.Intents.all()
-
 
 class Dataset:
     def __init__(self, name):
@@ -65,7 +63,7 @@ def get_token():
     return token.decode('utf-8')
 
 
-bot = commands.Bot(intents=intents)
+bot = commands.Bot()
 
 
 @bot.event
@@ -152,7 +150,6 @@ async def role(interaction: nextcord.Interaction, categorie: str = nextcord.Slas
         await interaction.send(f"I: Rôle {role.name} Ajouté")
 
 
-@application_checks.has_permissions(administrator = True)
 @bot.slash_command(description="Créer un message afin d'assigner des roles")
 async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.SlashOption(required=True), emotes:str = nextcord.SlashOption(required=True), roles:str = nextcord.SlashOption(required=True)):
     try:
@@ -199,45 +196,6 @@ async def rolemsg(interaction :nextcord.Interaction, message:str = nextcord.Slas
 async def stop(interaction = nextcord.Interaction):
     await interaction.send("Arrêt en cours...")
     quit()
-
-
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-    if message.channel.id == 1149047997670379641:
-        try:
-            if not str(message.guild.id) in listdir("data"):
-                mkdir(path.join("data",str(message.guild.id)))
-            with open('data/'+str(message.guild.id)+"/"+str(message.attachments[0].filename)+".ics", mode = "wb") as f:
-                await message.attachments[0].save(fp=f, seek_begin=True, use_cached=False)
-                f.close()
-            with open('data/'+str(message.guild.id)+"/"+str(message.attachments[0].filename)+".ics", mode = "rb") as f:
-                content = f.readlines()
-                f.close()
-            for line,linenb in zip(enumerate(content),range(len(content))):
-                if linenb == 6:
-                    nameline = line
-                elif linenb == 7:
-                    groupline = line
-                    break
-            name = nameline[1].decode('utf-8').split(' ')[3].lower()+" "+nameline[1].decode('utf-8').split(' ')[2]
-            name = name.replace(name[0],name[0].upper())
-            group = groupline[1].decode('utf-8').split(' ')[3]
-            if "S1" in group or "S2" in group:
-                group = group.replace("S1","")
-                group = group.replace(",","")
-                roles_id = {"A":1146771605746368672,"B":1146771791595982928,"C":1146771338153963581,"D":1146771504730742866}
-                role_id = roles_id[group]
-                role = message.guild.get_role(role_id)
-                await message.author.add_roles(message.guild.get_role(1147288522219343983))
-                await message.author.add_roles(role)
-                await message.author.edit(nick = name)
-            else:
-                await message.channel.send("Accès refusé. Si vous souhaitez tout de même accéder à ce serveur car vous êtes professeur(e), membre d'une association, d'un dispositif spécial ou un personnel de la direction, veuillez vous addresser aux Administrateurs afin d'obtenir un accès.")
-                return
-        except Exception as e:
-            print(e)
 
 
 bot.run(get_token())
